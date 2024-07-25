@@ -20,7 +20,7 @@ def envido_from_video(video_path: str):
 def envido_from_stream():
     cards = DetectCards.detect_and_show_cards_real_time()
     envido = cantar_envido(cards)
-    #st.write(envido)
+    st.write(envido)
     return envido
 
 def display_image_with_boxes(img_path):

@@ -13,6 +13,9 @@ torchvision = "*"
 pygame = "*"
 streamlit = "*"
 albumentations = "*"
+seaborn = "*"
+scikit-learn = "*"
+fiftyone = "*"
 
 [dev-packages]
 ipykernel = "*"
