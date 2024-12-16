@@ -4,17 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-ultralytics = "*"
-matplotlib = "*"
-pyyaml = "*"
-requests = "*"
-torch = "*"
-torchvision = "*"
-pygame = "*"
-streamlit = "*"
-albumentations = "*"
-seaborn = "*"
-scikit-learn = "*"
+ultralytics = "==8.2.56"
+pyyaml = "==6.0.1"
+requests = "==2.32.3"
+torch = "==2.3.1"
+torchvision = "==0.18.1"
+pygame = "==2.6.0"
+streamlit = "==1.36.0"
 fiftyone = "*"
 
 [dev-packages]

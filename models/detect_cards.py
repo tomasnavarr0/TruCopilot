@@ -4,10 +4,11 @@ from ultralytics import YOLO
 import numpy as np
 import time
 from collections import defaultdict
+import streamlit as st
 
 
 
-def get_color_for_class(class_name):
+def get_color_for_class(class_name: str) -> tuple[int,int,int]:
     if 'O' in class_name:
         return (255, 255, 0)  # Amarillo
     elif 'E' in class_name:
@@ -28,21 +29,20 @@ class DetectCards:
 
     @staticmethod
     def detect_and_show_cards_in_image(
-        image_path: str, model=model, class_names: dict[int, str] = model.names, confidence_threshold: float = 0.35
+        image_path: str, model=model,
+        class_names: dict[int, str] = model.names, 
+        confidence_threshold: float = 0.35
         ) -> tuple:
         cards_found = []
         
-        # Cargar la imagen
         image = cv2.imread(image_path)
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
-        # Realizar la detección
         results = model.predict(image_rgb, conf=confidence_threshold)
         
-        # Dibujar los bounding boxes en la imagen
         for result in results[0].boxes.data:
             x1, y1, x2, y2, conf, class_id = result
-            if conf >= confidence_threshold:  # Filtrar por umbral de confianza
+            if conf >= confidence_threshold:
                 x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
                 class_id = int(class_id)
                 class_name = class_names[class_id]
@@ -55,7 +55,10 @@ class DetectCards:
         return image_rgb, cards_found
 
     @staticmethod
-    def detect_and_show_cards_in_video(video_path: str, model = model, class_names: dict[int, str] = model.names, confidence_threshold: float = 0.4) -> list[str]:
+    def detect_and_show_cards_in_video(video_path: str, model = model,
+                                    class_names: dict[int, str] = model.names, 
+                                    confidence_threshold: float = 0.4
+                                    ) -> list[str]:
        
         cap = cv2.VideoCapture(video_path)
         start_time = time.time()
@@ -105,30 +108,34 @@ class DetectCards:
 
 
     @staticmethod
-    def detect_and_show_cards_real_time(model = model, class_names: dict[int, str] = model.names):
-        # Capturar video de la cámara
-        cap = cv2.VideoCapture(0)  # Usa 0 para la cámara por defecto
-        
+    def detect_and_show_cards_real_time(model = model, class_names: dict[int, str] = model.names) -> None:
+        st_frame = st.empty()
+
+        if "stream_active" not in st.session_state:
+            st.session_state["stream_active"] = True
+
+        if st.button("Detener Transmisión"):
+            st.session_state["stream_active"] = False
+
+        cap = cv2.VideoCapture(0)
         if not cap.isOpened():
-            print("Error: No se puede abrir la cámara")
+            st.error("Error: No se puede abrir la cámara")
             return
 
         card_detection_times = {}
         detected_cards_for_3_seconds = []
 
-        while True:
+        while st.session_state["stream_active"]:
             ret, frame = cap.read()
             if not ret:
-                print("Error: No se puede recibir frame (fin del stream?)")
+                st.error("Error: No se puede recibir frame (fin del stream?)")
                 break
 
-            # Realizar la detección
             results = model(frame)
             
             current_time = time.time()
             detected_cards = []
 
-            # Dibujar los bounding boxes en la imagen
             for result in results[0].boxes.data:
                 x1, y1, x2, y2, conf, class_id = result
                 x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
@@ -144,7 +151,6 @@ class DetectCards:
                 if class_name not in card_detection_times:
                     card_detection_times[class_name] = current_time
 
-            # Verificar si hay cartas detectadas por 3 segundos
             for card in card_detection_times.keys():
                 if card in detected_cards:
                     if current_time - card_detection_times[card] >= 3:
@@ -153,20 +159,10 @@ class DetectCards:
                 else:
                     card_detection_times[card] = current_time
 
-            # Mostrar el frame con los bounding boxes
-            cv2.imshow('Detección de Cartas en Tiempo Real', frame)
-            
-            # Verificar si ya se han detectado 3 cartas por más de 3 segundos
-            if len(detected_cards_for_3_seconds) >= 3:
-                break
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            st_frame.image(frame_rgb, channels="RGB", caption="Detección en Tiempo Real")
 
-            # Salir con la tecla 'q'
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-        # Liberar el recurso de captura y cerrar ventanas
         cap.release()
-        cv2.destroyAllWindows()
 
         return detected_cards_for_3_seconds
-
+    
